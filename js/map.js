@@ -16,9 +16,14 @@ class GameMap {
 
     this.showOverlay('loading', 'Loading map...');
 
+    const theme = document.documentElement.getAttribute('data-theme');
+    const styleUrl = theme === 'light'
+      ? 'https://tiles.openfreemap.org/styles/liberty'
+      : 'https://tiles.openfreemap.org/styles/dark';
+
     this.map = new maplibregl.Map({
       container: this.containerId,
-      style: 'https://tiles.openfreemap.org/styles/dark',
+      style: styleUrl,
       center: [0, 20],
       zoom: 1.5,
       attributionControl: false,
@@ -83,15 +88,24 @@ class GameMap {
     if (el) el.remove();
   }
 
+  pinSvg(color, size) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 36');
+    svg.setAttribute('width', size);
+    svg.setAttribute('height', Math.round(size * 1.5));
+    svg.style.display = 'block';
+    svg.style.filter = 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))';
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M12,2C8.13,2 5,5.13 5,9c0,5.25 7,13 7,13s7,-7.75 7,-13c0,-3.87 -3.13,-7 -7,-7zm0,9.5c-1.38,0 -2.5,-1.12 -2.5,-2.5S10.62,6.5 12,6.5s2.5,1.12 2.5,2.5S13.38,11.5 12,11.5z');
+    path.setAttribute('fill', color);
+    svg.appendChild(path);
+    return svg;
+  }
+
   createMarker(color, lngLat, size, onClick) {
     const el = document.createElement('div');
-    el.style.width = size + 'px';
-    el.style.height = size + 'px';
-    el.style.borderRadius = '50%';
-    el.style.background = color;
-    el.style.border = '3px solid white';
-    el.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
     el.style.cursor = 'pointer';
+    el.appendChild(this.pinSvg(color, size));
     if (onClick) el.addEventListener('click', onClick);
     const marker = new maplibregl.Marker({ element: el })
       .setLngLat(lngLat)
@@ -103,7 +117,7 @@ class GameMap {
   showQuestion(city) {
     this.clear();
     this.questionCity = city;
-    this.createMarker('#5B9DFF', [city.longitude, city.latitude], 18);
+    this.createMarker('#0088FF', [city.longitude, city.latitude], 24);
     this.map.flyTo({ center: [city.longitude, city.latitude], zoom: 4, duration: 1000 });
   }
 
@@ -111,12 +125,12 @@ class GameMap {
     this.clear();
     this.questionCity = questionCity;
 
-    this.createMarker('#5B9DFF', [questionCity.longitude, questionCity.latitude], 18);
+    this.createMarker('#0088FF', [questionCity.longitude, questionCity.latitude], 24);
 
     const aColor = optionA.id === correctCity.id ? '#52C697' : '#E83634';
     const bColor = optionB.id === correctCity.id ? '#52C697' : '#E83634';
-    this.createMarker(aColor, [optionA.longitude, optionA.latitude], 14, () => this.zoomToCity(questionCity, optionA));
-    this.createMarker(bColor, [optionB.longitude, optionB.latitude], 14, () => this.zoomToCity(questionCity, optionB));
+    this.createMarker(aColor, [optionA.longitude, optionA.latitude], 20, () => this.zoomToCity(questionCity, optionA));
+    this.createMarker(bColor, [optionB.longitude, optionB.latitude], 20, () => this.zoomToCity(questionCity, optionB));
 
     this.addGeodesicPolyline(questionCity, optionA);
     this.addGeodesicPolyline(questionCity, optionB);

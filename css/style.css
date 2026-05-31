@@ -82,58 +82,16 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   flex: 1;
-  gap: 12px;
+  gap: 14px;
 }
 
-.greeting-text {
-  font-size: 16px;
-  color: var(--text-muted);
-  margin-bottom: 4px;
-}
-
-.daily-ring-container {
-  position: relative;
-  width: 100px;
-  height: 100px;
+.home-logo {
   margin-bottom: 8px;
 }
-.daily-ring-svg {
-  transform: rotate(-90deg);
-}
-.daily-ring-bg {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 6;
-}
-.daily-ring-fill {
-  fill: none;
-  stroke: var(--primary);
-  stroke-width: 6;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1.2s ease-out;
-}
-.daily-ring-label {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--text);
-}
-.daily-ring-streak {
-  font-size: 11px;
-  color: var(--streak-gold);
-  font-weight: 400;
-}
-
-.home-title {
-  font-size: 42px;
-  font-weight: 800;
-  letter-spacing: 4px;
-  color: var(--primary);
+.home-logo-img {
+  width: 180px;
+  height: auto;
+  display: block;
 }
 
 .home-subtitle {
@@ -165,49 +123,45 @@ button:focus-visible {
   background: var(--primary-hover);
 }
 
-/* Secondary button */
-.btn-secondary {
+/* Filled button — solid primary background */
+.btn-filled {
   width: 80%;
   max-width: 320px;
   padding: 14px 12px;
   border-radius: var(--radius-btn);
-  border: 2px solid var(--text-muted);
+  border: 2px solid var(--primary);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 18px;
+  font-weight: 700;
+  transition: opacity 0.15s;
+}
+.btn-filled:hover {
+  opacity: 0.85;
+}
+.btn-filled:active {
+  opacity: 0.7;
+}
+
+/* Outline button — transparent with primary border */
+.btn-outline {
+  width: 80%;
+  max-width: 320px;
+  padding: 14px 12px;
+  border-radius: var(--radius-btn);
+  border: 2px solid var(--primary);
   background: transparent;
-  color: var(--text-muted);
+  color: var(--primary);
   font-size: 18px;
   font-weight: 700;
   transition: background 0.15s, color 0.15s;
 }
-
-.btn-secondary:hover {
-  background: var(--text-muted);
+.btn-outline:hover {
+  background: var(--primary);
   color: var(--on-primary);
 }
-
-/* Mode selector screen */
-.mode-list {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  flex: 1;
-  justify-content: center;
-}
-.btn-mode {
-  width: 80%;
-  max-width: 360px;
-  padding: 16px 20px;
-  border-radius: var(--radius-btn);
-  border: 2px solid var(--border);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 17px;
-  font-weight: 600;
-  text-align: left;
-  transition: border-color 0.15s, background 0.15s;
-}
-.btn-mode:hover {
-  border-color: var(--primary);
+.btn-outline:active {
+  opacity: 0.7;
 }
 
 /* Screen header */
@@ -228,6 +182,13 @@ button:focus-visible {
   font-size: 24px;
   padding: 4px 8px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.back-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 .back-btn:hover {
   color: var(--primary);
@@ -312,19 +273,40 @@ button:focus-visible {
   padding: 4px 8px;
   margin-right: auto;
 }
+.topbar-back svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
 
 .topbar-score {
   font-size: 18px;
+}
+.topbar-score svg {
+  width: 16px;
+  height: 16px;
+  vertical-align: -2px;
 }
 
 .topbar-streak {
   font-size: 16px;
   color: var(--streak-gold);
 }
+.topbar-streak svg {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+}
 
 .topbar-hearts {
   font-size: 18px;
   letter-spacing: 2px;
+}
+.topbar-hearts svg {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin: 0 1px;
 }
 
 .topbar-timer {
@@ -669,6 +651,11 @@ button:focus-visible {
   line-height: 1;
   margin-bottom: 8px;
 }
+.medal-emoji svg {
+  width: 80px;
+  height: 80px;
+  display: block;
+}
 .medal-title {
   font-size: 28px;
   font-weight: 800;
@@ -733,23 +720,12 @@ button:focus-visible {
     height: 350px;
   }
 
-  .home-title {
-    font-size: 52px;
-  }
 }
 
 @media (min-width: 1024px) {
   .map-container {
     height: 420px;
   }
-}
-
-/* High score */
-.highscore-text {
-  font-size: 13px;
-  color: var(--text-muted);
-  margin-top: 24px;
-  text-align: center;
 }
 
 /* Spinner */
@@ -856,9 +832,52 @@ button:focus-visible {
 .profile-name-btn:hover {
   background: var(--surface);
 }
-.profile-total {
-  font-size: 13px;
+.profile-edit-hint {
+  font-size: 12px;
   color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.profile-rings {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 32px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.score-ring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.score-ring-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.score-ring-svg {
+  transform: rotate(-90deg);
+}
+.score-ring-bg {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 6;
+}
+.score-ring-fill {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1.2s ease-out;
+}
+.score-ring-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
 }
 
 /* Dialog input */
@@ -898,6 +917,11 @@ button:focus-visible {
   font-size: 72px;
   line-height: 1;
   filter: drop-shadow(0 0 12px rgba(255,215,0,0.5));
+}
+.medal-reveal-emoji svg {
+  width: 80px;
+  height: 80px;
+  display: block;
 }
 .medal-reveal-name {
   font-size: 24px;

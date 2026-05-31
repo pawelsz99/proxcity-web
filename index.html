@@ -17,30 +17,38 @@
 
   <div class="profile-section" id="profile-section">
     <button class="profile-name-btn" id="profile-name" aria-label="Edit name"></button>
-    <p class="profile-total" id="profile-total-score">Total Score: 0</p>
+    <p class="profile-edit-hint" id="profile-edit-hint">Tap to edit</p>
+    <div class="profile-rings" id="profile-rings">
+      <div class="score-ring" id="score-ring-total">
+        <p class="score-ring-label">Total Score</p>
+        <svg class="score-ring-svg" viewBox="0 0 120 120" width="80" height="80">
+          <circle class="score-ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="score-ring-fill" id="ring-fill-total" cx="60" cy="60" r="50"
+            stroke-dasharray="314.159" stroke-dashoffset="0"/>
+        </svg>
+        <span class="score-ring-value" id="ring-value-total">0</span>
+      </div>
+      <div class="score-ring" id="score-ring-daily">
+        <p class="score-ring-label">Daily Goal</p>
+        <svg class="score-ring-svg" viewBox="0 0 120 120" width="80" height="80">
+          <circle class="score-ring-bg" cx="60" cy="60" r="50"/>
+          <circle class="score-ring-fill" id="ring-fill-daily" cx="60" cy="60" r="50"
+            stroke-dasharray="314.159" stroke-dashoffset="314.159"/>
+        </svg>
+        <span class="score-ring-value" id="ring-value-daily">0/50</span>
+      </div>
+    </div>
   </div>
 
   <div class="home-content" id="home-ready">
-    <div class="daily-ring-container" id="daily-ring-container">
-      <svg class="daily-ring-svg" viewBox="0 0 120 120" width="100" height="100">
-        <circle class="daily-ring-bg" cx="60" cy="60" r="50"/>
-        <circle class="daily-ring-fill" id="daily-ring-fill" cx="60" cy="60" r="50"
-          stroke-dasharray="314.159" stroke-dashoffset="314.159"/>
-      </svg>
-      <div class="daily-ring-label">
-        <span id="daily-score-text">0/50</span>
-        <span class="daily-ring-streak" id="daily-streak-text" style="display:none"></span>
-      </div>
+    <div class="home-logo">
+      <img src="images/logo_night.png" alt="ProxCity" class="home-logo-img" id="home-logo-img">
     </div>
 
-    <p class="greeting-text" id="greeting-text"></p>
-
-    <button class="btn-primary" id="btn-quick-game">⚡ Quick Game</button>
-    <button class="btn-primary" id="btn-explore-world">🌍 Explore the World</button>
-    <button class="btn-secondary" id="btn-adventures">📦 Adventures</button>
-    <button class="btn-secondary" id="btn-trophy">🏆 Trophy Cabinet</button>
-
-    <p class="highscore-text" id="highscore-text"></p>
+    <button class="btn-filled" id="btn-adventures">Adventure</button>
+    <button class="btn-outline" id="btn-quick-game">Quick Game</button>
+    <button class="btn-outline" id="btn-explore-world">Explore the World</button>
+    <button class="btn-filled" id="btn-trophy">Trophy Cabinet</button>
   </div>
 
   <div class="home-content" id="home-loading" style="display:none">
@@ -50,27 +58,14 @@
   <div class="home-content" id="home-error" style="display:none">
     <p class="home-subtitle" style="color:var(--wrong)">Failed to load city data</p>
     <p class="home-subtitle" id="error-message" style="font-size:14px;color:var(--text-muted)"></p>
-    <button class="btn-primary" id="btn-retry">Retry</button>
+    <button class="btn-filled" id="btn-retry">Retry</button>
   </div>
 </div>
 
-<div id="screen-mode-select" class="screen" style="display:none">
-  <div class="screen-header">
-    <button class="back-btn" id="btn-mode-back">&larr;</button>
-    <h2>Select Game Mode</h2>
-  </div>
-  <div class="mode-list">
-    <button class="btn-mode" id="btn-mode-world">🌍 World — All Cities</button>
-    <button class="btn-mode" id="btn-mode-continent">🌍 Continent</button>
-    <button class="btn-mode" id="btn-mode-country">🌍 Country</button>
-    <button class="btn-mode" id="btn-mode-pack">📦 Pack</button>
-    <button class="btn-mode" id="btn-mode-adventure">📦 Adventure</button>
-  </div>
-</div>
 
 <div id="screen-list-picker" class="screen" style="display:none">
   <div class="screen-header">
-    <button class="back-btn" id="btn-list-back">&larr;</button>
+    <button class="back-btn" id="btn-list-back"></button>
     <h2 id="list-picker-title">Select</h2>
   </div>
   <div class="selectable-list" id="selectable-list"></div>
@@ -79,11 +74,11 @@
 
 <div id="screen-game" class="screen" style="display:none">
   <div class="topbar" id="topbar">
-    <button class="topbar-back" id="btn-back" aria-label="Leave game">&larr;</button>
+    <button class="topbar-back" id="btn-back" aria-label="Leave game"></button>
     <span class="topbar-mode" id="topbar-mode"></span>
-    <span class="topbar-score" id="score-display">&#9733; 0</span>
-    <span class="topbar-streak" id="streak-display" style="display:none">&#x1F525; 0</span>
-    <span class="topbar-hearts" id="hearts-display">&#x2764;&#x2764;&#x2764;</span>
+    <span class="topbar-score" id="score-display"></span>
+    <span class="topbar-streak" id="streak-display" style="display:none"></span>
+    <span class="topbar-hearts" id="hearts-display"></span>
     <span class="topbar-timer" id="timer-display">12</span>
   </div>
 
@@ -114,7 +109,7 @@
     <p class="gameover-streak" id="final-streak"></p>
     <div class="gameover-daily-container" id="gameover-daily-container" style="display:none">
       <svg class="gameover-daily-svg" viewBox="0 0 120 120" width="80" height="80">
-        <circle class="daily-ring-bg" cx="60" cy="60" r="50"/>
+        <circle class="score-ring-bg" cx="60" cy="60" r="50"/>
         <circle class="gameover-daily-fill" id="gameover-daily-fill" cx="60" cy="60" r="50"
           stroke-dasharray="314.159" stroke-dashoffset="314.159"/>
       </svg>
@@ -160,6 +155,7 @@
 </div>
 
 <script src="js/countries.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/map.js"></script>
 <script src="js/game.js"></script>

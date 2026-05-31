@@ -28,6 +28,7 @@ let currentTopLimit = null;
 let gameMap = null;
 let currentRouteHash = '#';
 let ignoreNextHashChange = false;
+let ignoreNextPopstate = false;
 let packs = [];
 let adventures = [];
 let profileName = 'Player';
@@ -37,7 +38,6 @@ let gamesPlayed = 0;
 const screenHome = document.getElementById('screen-home');
 const screenGame = document.getElementById('screen-game');
 const screenGameover = document.getElementById('screen-gameover');
-const screenModeSelect = document.getElementById('screen-mode-select');
 const screenListPicker = document.getElementById('screen-list-picker');
 const dialogOverlay = document.getElementById('dialog-overlay');
 
@@ -54,6 +54,7 @@ const streakDisplay = document.getElementById('streak-display');
 const timerDisplay = document.getElementById('timer-display');
 const topbar = document.getElementById('topbar');
 const topbarMode = document.getElementById('topbar-mode');
+const topbarBack = document.getElementById('btn-back');
 
 const finalScore = document.getElementById('final-score');
 const finalStreak = document.getElementById('final-streak');
@@ -94,7 +95,6 @@ function showScreen(screen) {
   screenHome.style.display = 'none';
   screenGame.style.display = 'none';
   screenGameover.style.display = 'none';
-  screenModeSelect.style.display = 'none';
   screenListPicker.style.display = 'none';
   screen.style.display = 'flex';
 }
@@ -104,16 +104,14 @@ function formatCityLabel(city) {
   return `${city.name}${flag ? ' ' + flag : ''}`;
 }
 
-function greetUser() {
-  const hour = new Date().getHours();
-  let greeting = 'Good evening!';
-  if (hour < 12) greeting = 'Good morning!';
-  else if (hour < 18) greeting = 'Good afternoon!';
-  const nameEl = document.getElementById('greeting-text');
-  if (nameEl) nameEl.textContent = `${greeting} ${profileName}`;
-}
+function renderHomeRings() {
+  const circumference = 314.159;
 
-function renderDailyRing() {
+  const totalFill = document.getElementById('ring-fill-total');
+  const totalValue = document.getElementById('ring-value-total');
+  if (totalFill) totalFill.style.strokeDashoffset = '0';
+  if (totalValue) totalValue.textContent = String(totalScore);
+
   const today = new Date().toISOString().slice(0, 10);
   const savedDate = localStorage.getItem('daily_date');
   let dailyScore = 0;
@@ -125,31 +123,28 @@ function renderDailyRing() {
     dailyStreak = 0;
   }
   const progress = Math.min(dailyScore / DAILY_GOAL, 1);
-  const circumference = 314.159;
   const offset = circumference * (1 - progress);
-  const fill = document.getElementById('daily-ring-fill');
-  if (fill) fill.style.strokeDashoffset = offset;
-  const scoreText = document.getElementById('daily-score-text');
-  if (scoreText) scoreText.textContent = `${dailyScore}/${DAILY_GOAL}`;
-  const streakText = document.getElementById('daily-streak-text');
-  if (streakText) {
-    if (dailyStreak > 0) {
-      streakText.style.display = 'block';
-      streakText.textContent = `🔥 ${dailyStreak}`;
-    } else {
-      streakText.style.display = 'none';
-    }
-  }
-}
 
-function renderHomeDailyRing() {
-  renderDailyRing();
+  const dailyFill = document.getElementById('ring-fill-daily');
+  const dailyValue = document.getElementById('ring-value-daily');
+  if (dailyFill) {
+    dailyFill.style.strokeDashoffset = circumference;
+    requestAnimationFrame(() => {
+      dailyFill.style.strokeDashoffset = String(offset);
+    });
+  }
+  if (dailyValue) {
+    dailyValue.textContent = dailyStreak > 0 ? `${dailyScore}/${DAILY_GOAL} 🔥 ${dailyStreak}` : `${dailyScore}/${DAILY_GOAL}`;
+  }
 }
 
 function initTheme() {
   const stored = localStorage.getItem('proxcity_theme');
   if (stored === 'light' || stored === 'dark') {
     document.documentElement.setAttribute('data-theme', stored);
+  } else {
+    const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+    document.documentElement.setAttribute('data-theme', prefersLight ? 'light' : 'dark');
   }
   updateThemeButton();
 }
@@ -159,6 +154,16 @@ function updateThemeButton() {
   if (!btn) return;
   const theme = document.documentElement.getAttribute('data-theme');
   btn.textContent = theme === 'light' ? '☀️' : '🌙';
+  const logo = document.getElementById('home-logo-img');
+  if (logo) logo.src = theme === 'light' ? 'images/logo_day.png' : 'images/logo_night.png';
+}
+
+function refreshIcons() {
+  ['btn-back', 'btn-list-back'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = iconArrowBack();
+  });
+  if (state === State.PLAYING || state === State.ANSWERED) updateTopbar();
 }
 
 function toggleTheme() {
@@ -167,6 +172,7 @@ function toggleTheme() {
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('proxcity_theme', next);
   updateThemeButton();
+  refreshIcons();
   if (gameMap && gameMap.map) gameMap.switchTheme(next);
 }
 
@@ -185,8 +191,7 @@ function saveProfile() {
 function updateHomeProfile() {
   const nameEl = document.getElementById('profile-name');
   if (nameEl) nameEl.textContent = profileName;
-  const totalEl = document.getElementById('profile-total-score');
-  if (totalEl) totalEl.textContent = `Total Score: ${totalScore}`;
+  renderHomeRings();
 }
 
 function showEditNameDialog() {
@@ -216,7 +221,6 @@ function init() {
   showScreen(screenHome);
   showHomeState('loading');
   setupEventListeners();
-  greetUser();
   updateHomeProfile();
   loadCities();
   router(location.hash || '#');
@@ -235,11 +239,10 @@ function loadCities() {
       adventures = adata.adventures || [];
       engine = new GameEngine(allCities);
       showHomeState('ready');
-      loadHighScore();
       updateHomeProfile();
-      renderHomeDailyRing();
-      router(location.hash || '#');
-    })
+  renderHomeRings();
+  router(location.hash || '#');
+})
     .catch(err => {
       console.error('Failed to load:', err);
       errorMessage.textContent = err.message;
@@ -304,13 +307,6 @@ function setupEventListeners() {
   document.getElementById('btn-play-again').onclick = () => { Sound.click(); startGame(currentMode, currentFilter, currentTopLimit); };
   document.getElementById('btn-home').onclick = () => { Sound.click(); goHome(); };
 
-  document.getElementById('btn-mode-back').onclick = () => { Sound.click(); goHome(); };
-  document.getElementById('btn-mode-world').onclick = () => { Sound.click(); startGame('all'); };
-  document.getElementById('btn-mode-continent').onclick = () => { Sound.click(); showContinentPicker('continent'); };
-  document.getElementById('btn-mode-country').onclick = () => { Sound.click(); showContinentPicker('country'); };
-  document.getElementById('btn-mode-pack').onclick = () => { Sound.click(); showPackPicker(); };
-  document.getElementById('btn-mode-adventure').onclick = () => { Sound.click(); showAdventureList(); };
-
   btnOptionA.onclick = () => { Sound.click(); selectAnswer(currentRound.optionA); };
   btnOptionB.onclick = () => { Sound.click(); selectAnswer(currentRound.optionB); };
   btnNext.onclick = nextRound;
@@ -340,6 +336,8 @@ function setupEventListeners() {
   const themeBtn = document.getElementById('btn-theme-toggle');
   if (themeBtn) themeBtn.onclick = toggleTheme;
 
+  document.getElementById('btn-list-back').innerHTML = iconArrowBack();
+
   document.addEventListener('keydown', onKeyDown);
 
   document.addEventListener('visibilitychange', () => {
@@ -349,6 +347,7 @@ function setupEventListeners() {
 
   window.addEventListener('hashchange', onHashChange);
   window.addEventListener('popstate', () => {
+    if (ignoreNextPopstate) { ignoreNextPopstate = false; return; }
     if (state === State.PLAYING || state === State.ANSWERED) {
       showLeaveDialog();
     }
@@ -363,7 +362,6 @@ function saveNameDialog() {
   profileName = name;
   localStorage.setItem('profile_name', name);
   overlay.style.display = 'none';
-  greetUser();
   updateHomeProfile();
 }
 
@@ -505,7 +503,7 @@ function showContinentPicker(mode) {
       showCountryPicker(item.value);
     }
   };
-  showListPicker(title, items, onSelect, () => { showModeSelect(); });
+  showListPicker(title, items, onSelect, () => { goHome(); });
 }
 
 function showCountryPicker(continent) {
@@ -534,7 +532,7 @@ function showPackPicker() {
     ignoreNextHashChange = true;
     location.hash = '#/game/pack/' + encodeURIComponent(item.value);
     startGame('pack', item.value);
-  }, () => { showModeSelect(); });
+  }, () => { goHome(); });
 }
 
 function showAdventureList() {
@@ -550,7 +548,7 @@ function showAdventureList() {
   location.hash = '#/mode/adventure';
   showListPicker('Adventures', items, (item) => {
     showAdventureDetail(item.value);
-  }, () => { showModeSelect(); });
+  }, () => { goHome(); });
 }
 
 function showAdventureDetail(adventureId) {
@@ -603,10 +601,10 @@ function showTrophyCabinet() {
 
   const allItems = [];
   for (const g of grouped) {
-    const advLabel = g.medal.emoji + ' ' + g.adventure.name;
+    const advLabel = g.medal.emoji() + ' ' + g.adventure.name;
     allItems.push({ label: advLabel, value: 'header_' + g.adventure.id, sub: '', disabled: true, arrow: false });
     for (const p of g.packs) {
-      const medalIcon = p.medal.emoji ? p.medal.emoji + ' ' : '';
+      const medalIcon = p.medal.emoji ? p.medal.emoji() + ' ' : '';
       const progress = p.next ? ` (${p.meta.highScore}/${p.next.threshold} → ${p.next.medal})` : '';
       allItems.push({
         label: medalIcon + p.pack.name,
@@ -622,33 +620,34 @@ function showTrophyCabinet() {
   showListPicker('Trophy Cabinet', allItems.length > 0 ? allItems : [{ label: 'No adventures yet', value: '', disabled: true, arrow: false }], () => {}, () => { goHome(); });
 }
 
+function medalEmoji(level) {
+  if (level >= 3) return iconMedalGold();
+  if (level >= 2) return iconMedalSilver();
+  if (level >= 1) return iconMedalBronze();
+  return '';
+}
+
 function getMedalForScore(hs) {
-  if (hs >= 20) return { emoji: '🥇', name: 'Gold', level: 3 };
-  if (hs >= 15) return { emoji: '🥈', name: 'Silver', level: 2 };
-  if (hs >= 10) return { emoji: '🥉', name: 'Bronze', level: 1 };
-  return { emoji: '', name: 'None', level: 0, locked: true };
+  if (hs >= 20) return { emoji: iconMedalGold, name: 'Gold', level: 3 };
+  if (hs >= 15) return { emoji: iconMedalSilver, name: 'Silver', level: 2 };
+  if (hs >= 10) return { emoji: iconMedalBronze, name: 'Bronze', level: 1 };
+  return { emoji: () => '', name: 'None', level: 0, locked: true };
 }
 
 function getNextMedalProgress(hs) {
   if (hs >= 20) return null;
-  if (hs >= 15) return { threshold: 20, medal: 'Gold', emoji: '🥇', progress: (hs - 15) / 5 };
-  if (hs >= 10) return { threshold: 15, medal: 'Silver', emoji: '🥈', progress: (hs - 10) / 5 };
-  return { threshold: 10, medal: 'Bronze', emoji: '🥉', progress: hs / 10 };
+  if (hs >= 15) return { threshold: 20, medal: 'Gold', emoji: iconMedalGold, progress: (hs - 15) / 5 };
+  if (hs >= 10) return { threshold: 15, medal: 'Silver', emoji: iconMedalSilver, progress: (hs - 10) / 5 };
+  return { threshold: 10, medal: 'Bronze', emoji: iconMedalBronze, progress: hs / 10 };
 }
 
 function getAdventureMedalType(packMedals) {
   const levels = packMedals.map(m => m.level);
-  if (levels.length === 0) return { emoji: '', name: 'None', level: 0, locked: true };
-  if (levels.every(l => l >= 3)) return { emoji: '🏆', name: 'Gold', level: 3 };
-  if (levels.every(l => l >= 2)) return { emoji: '🏆', name: 'Silver', level: 2 };
-  if (levels.every(l => l >= 1)) return { emoji: '🏆', name: 'Bronze', level: 1 };
-  return { emoji: '', name: 'None', level: 0, locked: true };
-}
-
-function showModeSelect() {
-  ignoreNextHashChange = true;
-  location.hash = '#/mode';
-  showScreen(screenModeSelect);
+  if (levels.length === 0) return { emoji: () => '', name: 'None', level: 0, locked: true };
+  if (levels.every(l => l >= 3)) return { emoji: iconMedalGold, name: 'Gold', level: 3 };
+  if (levels.every(l => l >= 2)) return { emoji: iconMedalSilver, name: 'Silver', level: 2 };
+  if (levels.every(l => l >= 1)) return { emoji: iconMedalBronze, name: 'Bronze', level: 1 };
+  return { emoji: () => '', name: 'None', level: 0, locked: true };
 }
 
 function getResolution() {
@@ -976,13 +975,19 @@ function sparkle(tier) {
 }
 
 function updateTopbar() {
-  const full = '\u2764'.repeat(hearts);
-  const empty = '\u2761'.repeat(3 - hearts);
-  heartsDisplay.textContent = full + empty;
-  scoreDisplay.innerHTML = `&#9733; ${score}`;
+  let heartsHtml = '';
+  for (let i = 0; i < hearts; i++) heartsHtml += iconHeartFull();
+  for (let i = hearts; i < 3; i++) heartsHtml += iconHeartEmpty();
+  heartsDisplay.innerHTML = heartsHtml;
+  scoreDisplay.innerHTML = iconStar() + ' ' + score;
 
   if (currentMode !== 'all' && currentMode !== 'quick' && currentMode !== 'top' && currentFilter) {
-    topbarMode.textContent = currentFilter;
+    let displayName = currentFilter;
+    if (currentMode === 'pack') {
+      const pack = packs.find(p => p.id === currentFilter);
+      if (pack) displayName = pack.name;
+    }
+    topbarMode.textContent = displayName;
     topbarMode.style.display = 'inline';
   } else if (currentMode === 'top') {
     let label = 'Top ' + (currentTopLimit || 25);
@@ -1001,7 +1006,7 @@ function updateTopbar() {
 
   if (streak >= 2) {
     streakDisplay.style.display = 'inline';
-    streakDisplay.textContent = `\uD83D\uDD25 ${streak}`;
+    streakDisplay.innerHTML = iconStar() + ' ' + streak;
   } else {
     streakDisplay.style.display = 'none';
   }
@@ -1099,27 +1104,27 @@ function renderGameOverDailyRing() {
 
 function renderNearMiss() {
   const thresholds = [
-    { threshold: 20, name: 'Gold', emoji: '\uD83E\uDD47' },
-    { threshold: 15, name: 'Silver', emoji: '\uD83E\uDD48' },
-    { threshold: 10, name: 'Bronze', emoji: '\uD83E\uDD49' },
+    { threshold: 20, name: 'Gold', icon: iconMedalGold },
+    { threshold: 15, name: 'Silver', icon: iconMedalSilver },
+    { threshold: 10, name: 'Bronze', icon: iconMedalBronze },
   ];
   for (let i = 0; i < thresholds.length; i++) {
     if (score >= thresholds[i].threshold) {
       if (i === 0) {
-        nearMissText.textContent = '\uD83E\uDD47 Gold Medal earned!';
+        nearMissText.innerHTML = iconMedalGold() + ' Gold Medal earned!';
         nearMissText.style.display = 'block';
         return;
       }
       const prev = thresholds[i - 1];
       const needed = prev.threshold - score;
-      nearMissText.textContent = `You were ${needed} answer${needed > 1 ? 's' : ''} away from ${prev.emoji} ${prev.name} Medal!`;
+      nearMissText.innerHTML = `You were ${needed} answer${needed > 1 ? 's' : ''} away from ${prev.icon()} ${prev.name} Medal!`;
       nearMissText.style.display = 'block';
       return;
     }
   }
   const needed = 10 - score;
   if (needed > 0) {
-    nearMissText.textContent = `You were ${needed} answer${needed > 1 ? 's' : ''} away from \uD83E\uDD49 Bronze Medal!`;
+    nearMissText.innerHTML = `You were ${needed} answer${needed > 1 ? 's' : ''} away from ${iconMedalBronze()} Bronze Medal!`;
     nearMissText.style.display = 'block';
   }
 }
@@ -1129,9 +1134,9 @@ function getNewlyEarnedMedals(prevBest) {
   const pack = packs.find(p => p.id === currentFilter);
   const packName = pack ? pack.name : currentFilter || '';
   const earned = [];
-  if (score >= 20 && prevBest < 20) earned.push({ emoji: '\uD83E\uDD47', name: 'Gold', packName, order: 3 });
-  if (score >= 15 && prevBest < 15) earned.push({ emoji: '\uD83E\uDD48', name: 'Silver', packName, order: 2 });
-  if (score >= 10 && prevBest < 10) earned.push({ emoji: '\uD83E\uDD49', name: 'Bronze', packName, order: 1 });
+  if (score >= 20 && prevBest < 20) earned.push({ emoji: iconMedalGold, name: 'Gold', packName, order: 3 });
+  if (score >= 15 && prevBest < 15) earned.push({ emoji: iconMedalSilver, name: 'Silver', packName, order: 2 });
+  if (score >= 10 && prevBest < 10) earned.push({ emoji: iconMedalBronze, name: 'Bronze', packName, order: 1 });
   return earned;
 }
 
@@ -1152,7 +1157,7 @@ function showMedalOverlay(medals) {
     el.className = 'medal-item-reveal';
     el.style.animationDelay = (i * 500) + 'ms';
     el.innerHTML = `
-      <div class="medal-reveal-emoji">${medal.emoji}</div>
+      <div class="medal-reveal-emoji">${medal.emoji()}</div>
       <div class="medal-reveal-name">${medal.name}</div>
       <div class="medal-reveal-pack">${medal.packName}</div>
       <div class="medal-reveal-label">Unlocked!</div>
@@ -1222,13 +1227,12 @@ function goHome() {
   location.hash = '#';
   showScreen(screenHome);
   showHomeState('ready');
-  greetUser();
   updateHomeProfile();
-  renderHomeDailyRing();
-  loadHighScore();
+  renderHomeRings();
 }
 
 function showLeaveDialog() {
+  if (dialogOverlay.style.display === 'flex') return;
   if (state === State.PLAYING || state === State.ANSWERED) {
     dialogOverlay.style.display = 'flex';
   }
@@ -1241,6 +1245,7 @@ function hideLeaveDialog() {
 function confirmLeave() {
   hideLeaveDialog();
   ignoreNextHashChange = true;
+  ignoreNextPopstate = true;
   location.hash = '#';
   goHome();
 }
@@ -1252,8 +1257,8 @@ function onHashChange() {
   }
   const hash = location.hash || '#';
   if ((state === State.PLAYING || state === State.ANSWERED) && (hash === '#' || hash === '')) {
-    showLeaveDialog();
     ignoreNextHashChange = true;
+    ignoreNextPopstate = true;
     location.hash = currentRouteHash;
     return;
   }
@@ -1329,7 +1334,7 @@ function router(hash) {
     } else if (path === 'trophy') {
       showTrophyCabinet();
     } else {
-      showModeSelect();
+      goHome();
     }
     currentRouteHash = hash;
   } else if (hash.startsWith('#/adventure/')) {

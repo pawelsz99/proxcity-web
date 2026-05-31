@@ -1,31 +1,25 @@
-let audioCtx = null;
-let warningTimeout = null;
+const audioCache = {};
+const AUDIO_PATH = 'sounds/';
 
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  return audioCtx;
+function preloadAudio(name) {
+  if (audioCache[name]) return audioCache[name];
+  const audio = new Audio(AUDIO_PATH + name + '.mp3');
+  audio.preload = 'auto';
+  audioCache[name] = audio;
+  return audio;
 }
 
-function playTone(freq1, freq2, duration, type) {
+function playSound(name) {
   try {
-    const ctx = getAudioCtx();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = type || 'sine';
-    osc.frequency.setValueAtTime(freq1, ctx.currentTime);
-    osc.frequency.linearRampToValueAtTime(freq2, ctx.currentTime + duration);
-    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + duration);
+    const audio = preloadAudio(name);
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
   } catch (e) {}
 }
 
 function playClick() {
   try {
-    const ctx = getAudioCtx();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const buffer = ctx.createBuffer(1, ctx.sampleRate * 0.02, ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < data.length; i++) {
@@ -43,9 +37,9 @@ function playClick() {
 }
 
 const Sound = {
-  correct() { playTone(440, 880, 0.15); },
-  wrong() { playTone(440, 220, 0.2); },
+  correct() { playSound('correct'); },
+  wrong() { playSound('incorrect'); },
   click() { playClick(); },
-  gameover() { playTone(440, 110, 0.5); },
-  warning() { playTone(660, 440, 0.3, 'square'); },
+  gameover() { playSound('gameover'); },
+  warning() { playSound('warning'); },
 };

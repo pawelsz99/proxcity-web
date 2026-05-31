@@ -1,4 +1,5 @@
 let audioCtx = null;
+let warningTimeout = null;
 
 function getAudioCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -46,4 +47,5 @@ const Sound = {
   wrong() { playTone(440, 220, 0.2); },
   click() { playClick(); },
   gameover() { playTone(440, 110, 0.5); },
+  warning() { playTone(660, 440, 0.3, 'square'); },
 };

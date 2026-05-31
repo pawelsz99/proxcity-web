@@ -4,6 +4,7 @@ class GameMap {
     this.map = null;
     this.markers = [];
     this.polylineLayers = [];
+    this.questionCity = null;
   }
 
   init() {
@@ -13,6 +14,8 @@ class GameMap {
     const placeholder = container.querySelector('.map-placeholder');
     if (placeholder) placeholder.style.display = 'none';
 
+    this.showOverlay('loading', 'Loading map...');
+
     this.map = new maplibregl.Map({
       container: this.containerId,
       style: 'https://tiles.openfreemap.org/styles/dark',
@@ -21,6 +24,63 @@ class GameMap {
       attributionControl: false,
     });
     this.map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
+
+    this.map.on('load', () => this.removeOverlay('loading'));
+    this.map.on('error', (e) => {
+      console.error('Map error:', e.error?.message || e);
+      this.showOverlay('error', 'Map unavailable', 'Game continues without map');
+    });
+    this.map.on('style.load', () => this.removeOverlay('loading'));
+  }
+
+  geodesicRoute(lng1, lat1, lng2, lat2, steps) {
+    steps = steps || 64;
+    const coords = [];
+    const d = 1.0 / steps;
+    const f = [lat1 * Math.PI / 180, lng1 * Math.PI / 180];
+    const t = [lat2 * Math.PI / 180, lng2 * Math.PI / 180];
+
+    const cosφ1 = Math.cos(f[0]), sinφ1 = Math.sin(f[0]);
+    const cosφ2 = Math.cos(t[0]), sinφ2 = Math.sin(t[0]);
+    const Δλ = t[1] - f[1];
+    const cosΔλ = Math.cos(Δλ), sinΔλ = Math.sin(Δλ);
+
+    const x = Math.sqrt((cosφ2 * sinΔλ) ** 2 + (cosφ1 * sinφ2 - sinφ1 * cosφ2 * cosΔλ) ** 2);
+    const y = sinφ1 * sinφ2 + cosφ1 * cosφ2 * cosΔλ;
+    const δ = Math.atan2(x, y);
+
+    for (let i = 0; i <= steps; i++) {
+      const frac = i * d;
+      const A = Math.sin((1 - frac) * δ) / Math.sin(δ);
+      const B = Math.sin(frac * δ) / Math.sin(δ);
+      const x = A * cosφ1 * Math.cos(f[1]) + B * cosφ2 * Math.cos(t[1]);
+      const y = A * cosφ1 * Math.sin(f[1]) + B * cosφ2 * Math.sin(t[1]);
+      const z = A * sinφ1 + B * sinφ2;
+      const lat = Math.atan2(z, Math.sqrt(x * x + y * y)) * 180 / Math.PI;
+      const lng = Math.atan2(y, x) * 180 / Math.PI;
+      coords.push([lng, lat]);
+    }
+    return coords;
+  }
+
+  showOverlay(type, title, sub) {
+    const container = document.getElementById(this.containerId);
+    if (!container) return;
+    this.removeOverlay(type);
+    const overlay = document.createElement('div');
+    overlay.className = 'map-overlay map-overlay-' + type;
+    overlay.id = 'map-overlay-' + type;
+    if (type === 'loading') {
+      overlay.innerHTML = '<div class="spinner"></div><p>' + title + '</p>';
+    } else {
+      overlay.innerHTML = '<p>' + title + '</p>' + (sub ? '<p class="map-overlay-sub">' + sub + '</p>' : '');
+    }
+    container.appendChild(overlay);
+  }
+
+  removeOverlay(type) {
+    const el = document.getElementById('map-overlay-' + type);
+    if (el) el.remove();
   }
 
   createMarker(color, lngLat, size, onClick) {
@@ -58,8 +118,8 @@ class GameMap {
     this.createMarker(aColor, [optionA.longitude, optionA.latitude], 14, () => this.zoomToCity(questionCity, optionA));
     this.createMarker(bColor, [optionB.longitude, optionB.latitude], 14, () => this.zoomToCity(questionCity, optionB));
 
-    this.addPolyline(questionCity, optionA);
-    this.addPolyline(questionCity, optionB);
+    this.addGeodesicPolyline(questionCity, optionA);
+    this.addGeodesicPolyline(questionCity, optionB);
 
     const bounds = [
       [questionCity.longitude, questionCity.latitude],
@@ -69,15 +129,16 @@ class GameMap {
     this.map.fitBounds(bounds, { padding: 100, duration: 800 });
   }
 
-  addPolyline(city1, city2) {
+  addGeodesicPolyline(city1, city2) {
     const id = 'pline-' + city1.id + '-' + city2.id;
+    const coords = this.geodesicRoute(city1.longitude, city1.latitude, city2.longitude, city2.latitude, 64);
     this.map.addSource(id, {
       type: 'geojson',
       data: {
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: [[city1.longitude, city1.latitude], [city2.longitude, city2.latitude]],
+          coordinates: coords,
         },
       },
     });
@@ -98,6 +159,13 @@ class GameMap {
   zoomToCity(city1, city2) {
     const bounds = [[city1.longitude, city1.latitude], [city2.longitude, city2.latitude]];
     this.map.fitBounds(bounds, { padding: 100, duration: 600 });
+  }
+
+  switchTheme(theme) {
+    const styleUrl = theme === 'light'
+      ? 'https://tiles.openfreemap.org/styles/liberty'
+      : 'https://tiles.openfreemap.org/styles/dark';
+    this.map.setStyle(styleUrl);
   }
 
   clear() {

@@ -954,3 +954,35 @@ button:focus-visible {
 .sparkle-particle {
   will-change: transform, opacity;
 }
+
+/* Download section (home screen) */
+.home-download {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 16px;
+  width: 100%;
+}
+.home-divider {
+  width: 60%;
+  border: none;
+  border-top: 1px solid var(--border);
+}
+.home-download-label {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.play-badge-link {
+  display: inline-block;
+  transition: opacity 0.15s;
+  line-height: 0;
+}
+.play-badge-link:hover {
+  opacity: 0.85;
+}
+.play-badge-img {
+  height: 60px;
+  width: auto;
+}

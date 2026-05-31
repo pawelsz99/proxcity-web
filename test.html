@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ProxCity — Engine Test</title>
+<script src="https://cdn.jsdelivr.net/npm/h3-js@4.4.0/dist/h3-js.umd.js"></script>
+<script src="js/engine.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; background: #171717; color: #D9D9D9; padding: 24px; max-width: 700px; margin: 0 auto; }
+  h1 { color: #FF7700; }
+  pre { background: #222; padding: 12px; border-radius: 8px; overflow-x: auto; }
+  .pass { color: #52C697; }
+  .fail { color: #E83634; }
+  button { background: #FF7700; color: #171717; border: none; padding: 10px 20px; border-radius: 8px; font-size: 16px; cursor: pointer; margin: 4px; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  #output { margin-top: 16px; }
+</style>
+</head>
+<body>
+<h1>ProxCity — Engine Test</h1>
+<p>Tests the <code>GameEngine</code> class in <code>js/engine.js</code>.</p>
+
+<button id="testHaversine">Test Haversine</button>
+<button id="testGenerate">Test generateQuestion</button>
+<button id="testBatch">Run 100 rounds</button>
+
+<pre id="output">Ready. Click a button to run a test.</pre>
+
+<script>
+const output = document.getElementById('output');
+
+const TEST_CITIES = [
+  { id: 1, name: 'London', latitude: 51.5074, longitude: -0.1278, countryName: 'United Kingdom', continent: 'Europe', population: 8982000 },
+  { id: 2, name: 'Paris', latitude: 48.8566, longitude: 2.3522, countryName: 'France', continent: 'Europe', population: 2161000 },
+  { id: 3, name: 'Berlin', latitude: 52.5200, longitude: 13.4050, countryName: 'Germany', continent: 'Europe', population: 3645000 },
+  { id: 4, name: 'Tokyo', latitude: 35.6762, longitude: 139.6503, countryName: 'Japan', continent: 'Asia', population: 13960000 },
+  { id: 5, name: 'New York', latitude: 40.7128, longitude: -74.0060, countryName: 'United States', continent: 'North America', population: 8336000 },
+  { id: 6, name: 'Sydney', latitude: -33.8688, longitude: 151.2093, countryName: 'Australia', continent: 'Oceania', population: 5312000 },
+  { id: 7, name: 'Cairo', latitude: 30.0444, longitude: 31.2357, countryName: 'Egypt', continent: 'Africa', population: 9540000 },
+  { id: 8, name: 'Rio de Janeiro', latitude: -22.9068, longitude: -43.1729, countryName: 'Brazil', continent: 'South America', population: 6748000 },
+  { id: 9, name: 'Mumbai', latitude: 19.0760, longitude: 72.8777, countryName: 'India', continent: 'Asia', population: 12478447 },
+  { id: 10, name: 'Moscow', latitude: 55.7558, longitude: 37.6173, countryName: 'Russia', continent: 'Europe', population: 12506468 },
+  { id: 11, name: 'Cape Town', latitude: -33.9249, longitude: 18.4241, countryName: 'South Africa', continent: 'Africa', population: 433688 },
+  { id: 12, name: 'Buenos Aires', latitude: -34.6037, longitude: -58.3816, countryName: 'Argentina', continent: 'South America', population: 2890151 },
+];
+
+function log(msg) {
+  output.textContent += '\n' + msg;
+}
+
+function clearLog() {
+  output.textContent = '';
+}
+
+document.getElementById('testHaversine').onclick = () => {
+  clearLog();
+  log('=== Haversine Distance Tests ===\n');
+
+  const london = TEST_CITIES[0];
+  const paris = TEST_CITIES[1];
+  const tokyo = TEST_CITIES[3];
+  const sydney = TEST_CITIES[5];
+
+  const dLP = GameEngine.haversine(london.latitude, london.longitude, paris.latitude, paris.longitude);
+  log(`London → Paris: ${dLP.toFixed(0)} km (expected ~344)`);
+  log(dLP > 300 && dLP < 400 ? '  PASS' : '  FAIL');
+
+  const dLT = GameEngine.haversine(london.latitude, london.longitude, tokyo.latitude, tokyo.longitude);
+  log(`London → Tokyo: ${dLT.toFixed(0)} km (expected ~9550)`);
+  log(dLT > 9000 && dLT < 10000 ? '  PASS' : '  FAIL');
+
+  const dTS = GameEngine.haversine(tokyo.latitude, tokyo.longitude, sydney.latitude, sydney.longitude);
+  log(`Tokyo → Sydney: ${dTS.toFixed(0)} km (expected ~7820)`);
+  log(dTS > 7500 && dTS < 8200 ? '  PASS' : '  FAIL');
+
+  log('\nAll haversine tests done.');
+};
+
+document.getElementById('testGenerate').onclick = () => {
+  clearLog();
+  log('=== Single Round Generation ===\n');
+
+  const engine = new GameEngine(TEST_CITIES);
+  try {
+    const round = engine.generateQuestion(TEST_CITIES, TEST_CITIES, 1);
+    log(`Question: Which city is closer to ${round.questionCity.name}?`);
+    log(`Option A: ${round.optionA.name} (${round.optionA.countryName})`);
+    log(`Option B: ${round.optionB.name} (${round.optionB.countryName})`);
+    log('');
+
+    const correct = engine.getCorrectAnswer(round);
+    log(`Correct answer: ${correct.name}`);
+
+    const distA = engine.calculateDistance(round.questionCity, round.optionA);
+    const distB = engine.calculateDistance(round.questionCity, round.optionB);
+    log(`Distance from Q to A: ${distA.toFixed(0)} km`);
+    log(`Distance from Q to B: ${distB.toFixed(0)} km`);
+    log(`Distance diff: ${(Math.abs(distA - distB) / Math.min(distA, distB) * 100).toFixed(0)}% (need ≥10%)`);
+
+    const checkCorrect = engine.checkAnswer(round, correct);
+    log(`\ncheckAnswer(correct) → ${checkCorrect} (expected true)`);
+    log(checkCorrect ? '  PASS' : '  FAIL');
+
+    const wrong = engine.getIncorrectAnswer(round);
+    const checkWrong = engine.checkAnswer(round, wrong);
+    log(`checkAnswer(wrong) → ${checkWrong} (expected false)`);
+    log(!checkWrong ? '  PASS' : '  FAIL');
+
+    log('\nRound generation passed.');
+  } catch (e) {
+    log(`ERROR: ${e.message}`);
+  }
+};
+
+document.getElementById('testBatch').onclick = () => {
+  clearLog();
+  log(`=== Batch: 100 rounds with ${TEST_CITIES.length} cities ===\n`);
+
+  const engine = new GameEngine(TEST_CITIES);
+  let success = 0;
+  let fail = 0;
+  let errors = [];
+
+  for (let i = 0; i < 100; i++) {
+    try {
+      const round = engine.generateQuestion(TEST_CITIES, TEST_CITIES, 1);
+      const correct = engine.getCorrectAnswer(round);
+      if (!engine.checkAnswer(round, correct)) {
+        fail++;
+        errors.push(`Round ${i}: correct city failed check`);
+      } else if (round.optionA.id === round.optionB.id) {
+        fail++;
+        errors.push(`Round ${i}: duplicate options`);
+      } else if (round.questionCity.id === round.optionA.id || round.questionCity.id === round.optionB.id) {
+        fail++;
+        errors.push(`Round ${i}: option equals question city`);
+      } else {
+        success++;
+      }
+    } catch (e) {
+      fail++;
+      errors.push(`Round ${i}: ${e.message}`);
+    }
+  }
+
+  log(`Success: ${success}/100`);
+  log(`Failed: ${fail}/100`);
+  if (errors.length > 0) {
+    log('\nErrors (first 5):');
+    errors.slice(0, 5).forEach(e => log(`  - ${e}`));
+  } else {
+    log('\nAll 100 rounds passed validation!');
+  }
+};
+</script>
+</body>
+</html>

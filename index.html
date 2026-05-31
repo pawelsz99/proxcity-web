@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProxCity</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.css">
+<link rel="stylesheet" href="css/style.css">
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/h3-js@4.4.0/dist/h3-js.umd.js"></script>
+<script src="js/engine.js"></script>
+</head>
+<body>
+
+<div id="screen-home" class="screen">
+  <div class="home-content" id="home-ready">
+    <h1 class="home-title">PROXCITY</h1>
+    <p class="home-subtitle">Which city is closer?</p>
+    <button class="btn-primary" id="btn-play-all">Play All Cities</button>
+    <button class="btn-primary" id="btn-play-quick">Quick Game</button>
+    <p class="highscore-text" id="highscore-text"></p>
+  </div>
+  <div class="home-content" id="home-loading" style="display:none">
+    <div class="spinner"></div>
+    <p class="home-subtitle">Loading cities...</p>
+  </div>
+  <div class="home-content" id="home-error" style="display:none">
+    <p class="home-subtitle" style="color:var(--wrong)">Failed to load city data</p>
+    <p class="home-subtitle" id="error-message" style="font-size:14px;color:var(--text-muted)"></p>
+    <button class="btn-primary" id="btn-retry">Retry</button>
+  </div>
+</div>
+
+<div id="screen-game" class="screen" style="display:none">
+  <div class="topbar" id="topbar">
+    <button class="topbar-back" id="btn-back" aria-label="Leave game">&larr;</button>
+    <span class="topbar-score" id="score-display">&#9733; 0</span>
+    <span class="topbar-streak" id="streak-display" style="display:none">&#x1F525; 0</span>
+    <span class="topbar-hearts" id="hearts-display">&#x2764;&#x2764;&#x2764;</span>
+    <span class="topbar-timer" id="timer-display">12</span>
+  </div>
+
+  <div class="game-body">
+    <p class="question-text" id="question-text">Which city is closer to Paris?</p>
+
+    <div class="map-container" id="map-container">
+      <div class="map-placeholder">Map will appear here</div>
+    </div>
+
+    <div class="answers">
+      <button class="btn-answer" id="btn-option-a"></button>
+      <button class="btn-answer" id="btn-option-b"></button>
+    </div>
+
+    <div class="status-area" id="status-area" style="display:none">
+      <p class="status-text" id="status-text"></p>
+      <button class="btn-next" id="btn-next">Next Round</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-gameover" class="screen" style="display:none">
+  <div class="gameover-content">
+    <h2 class="gameover-title">GAME OVER</h2>
+    <p class="gameover-score-label">Your Score</p>
+    <p class="gameover-score" id="final-score">0</p>
+    <p class="gameover-streak" id="final-streak"></p>
+    <button class="btn-primary" id="btn-play-again">Play Again</button>
+    <button class="btn-secondary" id="btn-home">Home</button>
+  </div>
+</div>
+
+<div id="dialog-overlay" class="dialog-overlay" style="display:none">
+  <div class="dialog-box">
+    <p class="dialog-title">Leave Game?</p>
+    <p class="dialog-text">Your progress will be lost. Are you sure you want to leave?</p>
+    <div class="dialog-buttons">
+      <button class="btn-dialog btn-dialog-leave" id="dialog-leave">Leave</button>
+      <button class="btn-dialog btn-dialog-stay" id="dialog-stay">Stay</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/countries.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/map.js"></script>
+<script src="js/game.js"></script>
+</body>
+</html>

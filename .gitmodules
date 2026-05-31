@@ -1,0 +1,3 @@
+[submodule "cityData"]
+	path = cityData
+	url = git@github.com:pawelsz99/city-data.git

@@ -309,13 +309,7 @@ button:focus-visible {
   margin: 0 1px;
 }
 
-.topbar-timer {
-  font-size: 18px;
-  font-weight: 700;
-  min-width: 24px;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
+
 
 /* Game body */
 .game-body {
@@ -376,11 +370,13 @@ button:focus-visible {
 /* Answer buttons */
 .answers {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: 12px;
 }
 
 .btn-answer {
+  flex: 1;
+  min-width: 0;
   min-height: 80px;
   max-height: 100px;
   border-radius: var(--radius-answer);
@@ -433,6 +429,15 @@ button:focus-visible {
   opacity: 0.8;
 }
 
+.btn-answer.btn-revealed {
+  opacity: 1;
+  cursor: pointer;
+}
+
+.btn-answer.btn-revealed:hover {
+  opacity: 0.85;
+}
+
 /* Status area */
 .status-area {
   display: flex;
@@ -455,23 +460,34 @@ button:focus-visible {
   color: var(--wrong);
 }
 
-/* Next round button */
-.btn-next {
+/* Action button (timer / next round / game over) */
+.btn-action {
   width: 100%;
-  max-width: 320px;
   padding: 14px 12px;
   border-radius: var(--radius-btn);
-  border: 2px solid var(--primary);
-  background: transparent;
-  color: var(--primary);
   font-size: 18px;
   font-weight: 700;
-  transition: background 0.15s, color 0.15s;
+  background: transparent;
+  color: var(--text);
+  border: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  cursor: default;
+  font-variant-numeric: tabular-nums;
 }
 
-.btn-next:hover {
+.btn-action.active {
   background: var(--primary);
   color: var(--on-primary);
+  border-color: var(--primary);
+  cursor: pointer;
+}
+
+.btn-action.active:hover {
+  opacity: 0.85;
+}
+
+.btn-action.active:active {
+  opacity: 0.7;
 }
 
 /* Game over screen */
@@ -960,19 +976,18 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   margin-top: auto;
-  padding-top: 16px;
+  padding: 28px 24px;
   width: 100%;
-}
-.home-divider {
-  width: 60%;
-  border: none;
-  border-top: 1px solid var(--border);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
 }
 .home-download-label {
-  font-size: 14px;
-  color: var(--text-muted);
+  font-size: 20px;
+  color: var(--primary);
+  font-weight: 700;
 }
 .play-badge-link {
   display: inline-block;
@@ -983,6 +998,6 @@ button:focus-visible {
   opacity: 0.85;
 }
 .play-badge-img {
-  height: 60px;
+  height: 120px;
   width: auto;
 }

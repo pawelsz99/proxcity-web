@@ -46,12 +46,11 @@ const btnOptionA = document.getElementById('btn-option-a');
 const btnOptionB = document.getElementById('btn-option-b');
 const statusArea = document.getElementById('status-area');
 const statusText = document.getElementById('status-text');
-const btnNext = document.getElementById('btn-next');
 
 const scoreDisplay = document.getElementById('score-display');
 const heartsDisplay = document.getElementById('hearts-display');
 const streakDisplay = document.getElementById('streak-display');
-const timerDisplay = document.getElementById('timer-display');
+const btnAction = document.getElementById('btn-action');
 const topbar = document.getElementById('topbar');
 const topbarMode = document.getElementById('topbar-mode');
 const topbarBack = document.getElementById('btn-back');
@@ -307,9 +306,16 @@ function setupEventListeners() {
   document.getElementById('btn-play-again').onclick = () => { Sound.click(); startGame(currentMode, currentFilter, currentTopLimit); };
   document.getElementById('btn-home').onclick = () => { Sound.click(); goHome(); };
 
-  btnOptionA.onclick = () => { Sound.click(); selectAnswer(currentRound.optionA); };
-  btnOptionB.onclick = () => { Sound.click(); selectAnswer(currentRound.optionB); };
-  btnNext.onclick = nextRound;
+  btnOptionA.onclick = () => onAnswerClick(currentRound.optionA);
+  btnOptionB.onclick = () => onAnswerClick(currentRound.optionB);
+  btnAction.onclick = () => {
+    Sound.click();
+    if (state === State.ANSWERED && hearts <= 0) {
+      handleGameEnd();
+    } else if (state === State.ANSWERED) {
+      nextRound();
+    }
+  };
 
   document.getElementById('btn-back').onclick = showLeaveDialog;
   document.getElementById('dialog-leave').onclick = confirmLeave;
@@ -372,11 +378,11 @@ function onKeyDown(e) {
     return;
   }
   if (state === State.PLAYING) {
-    if (e.key === '1' && !btnOptionA.disabled) { Sound.click(); selectAnswer(currentRound.optionA); }
-    if (e.key === '2' && !btnOptionB.disabled) { Sound.click(); selectAnswer(currentRound.optionB); }
+    if (e.key === '1') { Sound.click(); selectAnswer(currentRound.optionA); }
+    if (e.key === '2') { Sound.click(); selectAnswer(currentRound.optionB); }
   }
-  if (state === State.ANSWERED && (e.key === 'Enter' || e.key === ' ')) {
-    if (btnNext.style.display !== 'none') nextRound();
+  if (state === State.ANSWERED && hearts > 0 && (e.key === 'Enter' || e.key === ' ')) {
+    nextRound();
   }
 }
 
@@ -757,10 +763,20 @@ function generateAndShowRound(questionPool) {
   btnOptionB.className = 'btn-answer';
 
   statusArea.style.display = 'none';
-  btnNext.style.display = 'none';
+  btnAction.textContent = 12;
+  btnAction.className = 'btn-action';
 
   startTimer();
   btnOptionA.focus();
+}
+
+function onAnswerClick(city) {
+  Sound.click();
+  if (state === State.PLAYING) {
+    selectAnswer(city);
+  } else if (state === State.ANSWERED) {
+    gameMap.zoomToCity(currentRound.questionCity, city);
+  }
 }
 
 function selectAnswer(selectedCity) {
@@ -791,35 +807,29 @@ function selectAnswer(selectedCity) {
   revealAnswer(selectedCity, isCorrect ? 'correct' : 'wrong');
 
   if (hearts <= 0) {
-    btnNext.textContent = 'Game Over';
-    setTimeout(() => { handleGameEnd(); }, 1200);
+    btnAction.textContent = 'Game Over';
   } else {
-    btnNext.textContent = 'Next Round';
-    btnNext.style.display = 'block';
-    statusArea.style.display = 'flex';
+    btnAction.textContent = 'Next Round';
   }
+  btnAction.className = 'btn-action active';
+  statusArea.style.display = 'flex';
 }
 
 function revealAnswer(selectedCity, result) {
   const tier = getStreakTier(streak);
 
   const correctEl = correctAnswer.id === currentRound.optionA.id ? btnOptionA : btnOptionB;
-  correctEl.classList.add('btn-correct');
-  correctEl.disabled = true;
+  correctEl.classList.add('btn-correct', 'btn-revealed');
 
   const distCorrect = engine.calculateDistance(currentRound.questionCity, correctAnswer);
   correctEl.innerHTML = `<span class="answer-city">${formatCityLabel(correctAnswer)}</span><span class="answer-distance">${distCorrect.toFixed(0)} km</span>`;
 
   const wrongAnswer = engine.getIncorrectAnswer(currentRound);
   const wrongEl = wrongAnswer.id === currentRound.optionA.id ? btnOptionA : btnOptionB;
-  wrongEl.disabled = true;
+  wrongEl.classList.add('btn-wrong', 'btn-revealed');
 
   const distWrong = engine.calculateDistance(currentRound.questionCity, wrongAnswer);
   wrongEl.innerHTML = `<span class="answer-city">${formatCityLabel(wrongAnswer)}</span><span class="answer-distance">${distWrong.toFixed(0)} km</span>`;
-
-  if (result === 'wrong') {
-    wrongEl.classList.add('btn-wrong');
-  }
 
   const pulseClass = 'btn-pulse-tier-' + tier;
   correctEl.classList.add(pulseClass);
@@ -848,7 +858,8 @@ function startTimer() {
   timerRemaining = 12;
   timerRemainingBeforePause = 0;
   timerStart = Date.now();
-  timerDisplay.textContent = timerRemaining;
+  btnAction.textContent = timerRemaining;
+  btnAction.className = 'btn-action';
   clearInterval(timerInterval);
   timerInterval = setInterval(tickTimer, 1000);
 }
@@ -856,7 +867,7 @@ function startTimer() {
 function tickTimer() {
   const elapsed = (Date.now() - timerStart) / 1000;
   timerRemaining = Math.max(0, 12 - Math.floor(elapsed));
-  timerDisplay.textContent = timerRemaining;
+  btnAction.textContent = timerRemaining;
 
   if (timerRemaining === 3 && !warningPlayed) {
     warningPlayed = true;
@@ -894,13 +905,12 @@ function onTimeUp() {
   animateHeartShake();
   revealAnswer(null, 'timeup');
   if (hearts <= 0) {
-    btnNext.textContent = 'Game Over';
-    setTimeout(() => { handleGameEnd(); }, 1200);
+    btnAction.textContent = 'Game Over';
   } else {
-    btnNext.textContent = 'Next Round';
-    btnNext.style.display = 'block';
-    statusArea.style.display = 'flex';
+    btnAction.textContent = 'Next Round';
   }
+  btnAction.className = 'btn-action active';
+  statusArea.style.display = 'flex';
 }
 
 function stopTimer() {
@@ -1006,7 +1016,7 @@ function updateTopbar() {
 
   if (streak >= 2) {
     streakDisplay.style.display = 'inline';
-    streakDisplay.innerHTML = iconStar() + ' ' + streak;
+    streakDisplay.textContent = '🔥 ' + streak;
   } else {
     streakDisplay.style.display = 'none';
   }
